@@ -9,7 +9,7 @@ This repository contains an AWS Lambda function written in Java that retrieves t
 *   Configurable temperature units (Celsius or Fahrenheit).
 *   Built-in retry mechanism for external API calls to improve reliability.
 *   Handles errors gracefully and returns informative error messages.
-*   Designed to be deployed as an AWS Lambda function triggered by API Gateway.
+*   Designed to be deployed as an AWS Lambda function exposed via a Lambda Function URL.
 
 ## Architecture
 
@@ -62,19 +62,18 @@ This will generate a JAR file in the `target/` directory (e.g., `weather.app.ass
 3.  **Configure Handler**: In the function's "Code source" section, edit the "Runtime settings" to set the handler to:
     `com.sa.handlers.WeatherHandler::handleRequest`
 4.  **Set Environment Variables**: In the "Configuration" > "Environment variables" section, add the key-value pairs listed in the [Configuration](#configuration) section.
-5.  **Add API Gateway Trigger**: In the "Function overview" section, click "Add trigger" and select "API Gateway".
-    *   Create a new REST API.
-    *   Choose a security setting (e.g., "Open").
-    *   Configure a `GET` method for your desired endpoint path.
+5.  **Enable Function URL**: In the "Configuration" > "Function URL" section, click "Create function URL".
+    *   Set auth type to `NONE` for public access.
+    *   Copy the generated URL — this is your HTTP endpoint.
 
 ## Usage
 
-Once deployed, you can invoke the function via the API Gateway URL. The function expects a single query parameter, `cityName`.
+Once deployed, you can invoke the function via its Lambda Function URL. The function expects a single query parameter, `cityName`.
 
 **Example Request:**
 
 ```
-GET https://<your-api-id>.execute-api.<your-region>.amazonaws.com/default/my-function?cityName=Tokyo
+GET https://<your-function-url-id>.lambda-url.<your-region>.on.aws/?cityName=Tokyo
 ```
 
 **Example Success Response (200 OK):**
@@ -109,3 +108,4 @@ If an external API fails or returns an unexpected response.
     "message": "External API failure",
     "timestamp": "2023-10-27 10:31:15"
 }
+```
