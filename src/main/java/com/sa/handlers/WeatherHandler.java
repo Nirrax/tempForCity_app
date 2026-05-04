@@ -49,7 +49,7 @@ public class WeatherHandler implements RequestHandler<APIGatewayProxyRequestEven
 
         TemperatureUnit temperatureUnit;
         try {
-            temperatureUnit = TemperatureUnit.valueOf(temperatureUnitParam);
+            temperatureUnit = TemperatureUnit.valueOf(temperatureUnitParam.toUpperCase());
         } catch (IllegalArgumentException e) {
             return sendResponse(400, new ErrorDTO(400, "Invalid query parameter: temperature_unit | must be celsius or fahrenheit"));
         }
