@@ -9,6 +9,7 @@ import com.sa.clients.WeatherClient;
 import com.sa.clients.openMeteo.OpenMeteoGeocodingClient;
 import com.sa.clients.openMeteo.OpenMeteoWeatherClient;
 import com.sa.configs.AppConfig;
+import com.sa.enums.TemperatureUnit;
 import com.sa.exceptions.ExternalServiceException;
 import com.sa.exceptions.InvalidResponseException;
 import com.sa.models.ErrorDTO;
@@ -30,15 +31,15 @@ public class WeatherHandler implements RequestHandler<APIGatewayProxyRequestEven
         ObjectMapper objectMapper = new ObjectMapper();
         GeocodingClient geocodingClient = new OpenMeteoGeocodingClient(config, httpClient, objectMapper);
         WeatherClient weatherClient = new OpenMeteoWeatherClient(config, httpClient, objectMapper);
-        this.lambdaService = new WeatherService(weatherClient, geocodingClient, config);
+        this.lambdaService = new WeatherService(weatherClient, geocodingClient);
         this.objectMapper = objectMapper;
     }
 
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent event, Context context) {
-        String cityName = getQueryParam(event, "cityName");
+        String cityName = getQueryParam(event, "city_name");
         if (cityName == null || cityName.isBlank()) {
-            return sendResponse(400, new ErrorDTO(400, "Missing query parameter: cityName"));
+            return sendResponse(400, new ErrorDTO(400, "Missing query parameter: city_name"));
         }
 
         String temperatureUnitParam =  getQueryParam(event, "temperature_unit");
