@@ -2,7 +2,6 @@ package com.sa.services;
 
 import com.sa.clients.GeocodingClient;
 import com.sa.clients.WeatherClient;
-import com.sa.configs.AppConfig;
 import com.sa.enums.TemperatureCategory;
 import com.sa.enums.TemperatureUnit;
 import com.sa.models.Coordinates;
@@ -13,17 +12,15 @@ import java.util.List;
 public class WeatherService {
     private final WeatherClient weatherClient;
     private final GeocodingClient geocodingClient;
-    private final TemperatureUnit temperatureUnit;
 
-    public WeatherService(WeatherClient weatherClient, GeocodingClient geocodingClient, AppConfig config) {
+    public WeatherService(WeatherClient weatherClient, GeocodingClient geocodingClient) {
         this.weatherClient = weatherClient;
         this.geocodingClient = geocodingClient;
-        this.temperatureUnit = config.getTemperatureUnit();
     }
 
-    public Temperature getTemperatureForCity(String cityName) {
+    public Temperature getTemperatureForCity(String cityName, TemperatureUnit temperatureUnit) {
         List<Coordinates> coordinates = geocodingClient.getCoordinates(cityName);
-        double temperature = weatherClient.getTemperature(coordinates.getFirst());
+        double temperature = weatherClient.getTemperature(coordinates.getFirst(), temperatureUnit);
         return new Temperature(temperature, temperatureUnit, TemperatureCategory.from(temperature));
     }
 }

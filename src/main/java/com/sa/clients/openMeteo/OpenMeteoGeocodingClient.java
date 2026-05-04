@@ -24,9 +24,9 @@ public class OpenMeteoGeocodingClient implements GeocodingClient {
     private final int RETRY_DELAY_MS;
 
     public OpenMeteoGeocodingClient(AppConfig config, HttpClient httpClient, ObjectMapper objectMapper) {
-        this.apiUrl = config.getGeocodingApiUrl();
-        this.MAX_RETRIES = config.getGeocodingMaxRetries();
-        this.RETRY_DELAY_MS = config.getGeocodingRetryDelay();
+        this.apiUrl = config.geocodingApiUrl();
+        this.MAX_RETRIES = config.geocodingMaxRetries();
+        this.RETRY_DELAY_MS = config.geocodingRetryDelay();
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
     }
@@ -46,7 +46,6 @@ public class OpenMeteoGeocodingClient implements GeocodingClient {
         while (attempts < this.MAX_RETRIES) {
             try {
                 HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
-
                 if (response.statusCode() == 200) {
                     List<Coordinates> results = parseCoordinates(response.body());
                     if (results.isEmpty()) {
