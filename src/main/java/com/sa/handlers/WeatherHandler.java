@@ -41,8 +41,20 @@ public class WeatherHandler implements RequestHandler<APIGatewayProxyRequestEven
             return sendResponse(400, new ErrorDTO(400, "Missing query parameter: cityName"));
         }
 
+        String temperatureUnitParam =  getQueryParam(event, "temperature_unit");
+        if (temperatureUnitParam == null || temperatureUnitParam.isBlank()) {
+            return sendResponse(400, new ErrorDTO(400, "Missing query parameter: city_unit"));
+        }
+
+        TemperatureUnit temperatureUnit;
         try {
-            Temperature temperature = lambdaService.getTemperatureForCity(cityName);
+            temperatureUnit = TemperatureUnit.valueOf(temperatureUnitParam.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return sendResponse(400, new ErrorDTO(400, "Invalid query parameter: temperature_unit | must be celsius or fahrenheit"));
+        }
+
+        try {
+            Temperature temperature = lambdaService.getTemperatureForCity(cityName, temperatureUnit);
             return sendResponse(200, temperature);
         } catch (IllegalArgumentException e) {
             return sendResponse(400, new ErrorDTO(400, "Bad path parameter: cityName"));
