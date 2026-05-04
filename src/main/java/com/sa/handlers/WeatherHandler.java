@@ -44,7 +44,7 @@ public class WeatherHandler implements RequestHandler<APIGatewayProxyRequestEven
 
         String temperatureUnitParam =  getQueryParam(event, "temperature_unit");
         if (temperatureUnitParam == null || temperatureUnitParam.isBlank()) {
-            return sendResponse(400, new ErrorDTO(400, "Missing query parameter: city_unit"));
+            temperatureUnitParam = TemperatureUnit.CELSIUS.toString();
         }
 
         TemperatureUnit temperatureUnit;
