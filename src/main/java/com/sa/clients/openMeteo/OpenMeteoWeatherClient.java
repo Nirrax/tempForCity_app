@@ -19,23 +19,26 @@ import java.net.http.HttpResponse.BodyHandlers;
 public class OpenMeteoWeatherClient implements WeatherClient {
     private final HttpClient httpClient;
     private final String apiUrl;
-    private final TemperatureUnit temperatureUnit;
     private final ObjectMapper objectMapper;
     private final int MAX_RETRIES;
     private final int RETRY_DELAY_MS;
 
     public OpenMeteoWeatherClient(AppConfig config, HttpClient httpClient, ObjectMapper objectMapper) {
-        this.apiUrl = config.getWeatherApiUrl();
-        this.MAX_RETRIES = config.getWeatherMaxRetries();
-        this.RETRY_DELAY_MS = config.getWeatherRetryDelay();
-        this.temperatureUnit = config.getTemperatureUnit();
+        this.apiUrl = config.weatherApiUrl();
+        this.MAX_RETRIES = config.weatherMaxRetries();
+        this.RETRY_DELAY_MS = config.weatherRetryDelay();
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
     }
 
     @Override
-    public double getTemperature(Coordinates coordinates) {
-        String url = this.apiUrl + "?latitude=" + coordinates.latitude() + "&longitude=" + coordinates.longitude() + "&current=temperature_2m" + "&temperature_unit=" + temperatureUnit.getValue() + "&format=json";
+    public double getTemperature(Coordinates coordinates, TemperatureUnit temperatureUnit) {
+        String url = this.apiUrl
+                + "?latitude=" + coordinates.latitude()
+                + "&longitude=" + coordinates.longitude()
+                + "&current=temperature_2m"
+                + "&temperature_unit=" + temperatureUnit.getValue()
+                + "&format=json";
 
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
 
