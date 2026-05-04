@@ -15,11 +15,30 @@ This repository contains an AWS Lambda function written in Java that retrieves t
 
 The application is structured as a serverless function with a clear separation of concerns:
 
-1.  **`WeatherHandler`**: The main entry point for the AWS Lambda function. It parses the incoming `APIGatewayProxyRequestEvent`, validates the input, and orchestrates the response.
-2.  **`WeatherService`**: The core business logic resides here. It uses the geocoding client to get coordinates for a city and then uses the weather client to fetch the temperature.
-3.  **Clients (`GeocodingClient`, `WeatherClient`)**: These interfaces and their implementations (`OpenMeteoGeocodingClient`, `OpenMeteoWeatherClient`) are responsible for communicating with external APIs. They handle HTTP requests, parsing responses, and implementing retry logic.
-4.  **`AppConfig`**: Manages application configuration by loading settings from environment variables.
-5.  **Models & Enums**: Data transfer objects (`Temperature`, `Coordinates`, `ErrorDTO`) and enumerations (`TemperatureCategory`, `TemperatureUnit`) provide type-safe data structures.
+1.  **`WeatherHandler`**: The main entry point for the AWS Lambda function. It parses the incoming request, validates the input, and orchestrates the response. It contains no business logic — its only responsibility is to translate HTTP input/output and delegate to the service layer.
+2.  **`WeatherService`**: The core business logic resides here. It uses the geocoding client to get coordinates for a city and then uses the weather client to fetch the temperature. Keeping this separate from the handler means the logic can be tested and reused independently of AWS.
+3.  **Clients (`GeocodingClient`, `WeatherClient`)**: Defined as interfaces so that the rest of the application has no dependency on any specific weather provider. The concrete implementations (`OpenMeteoGeocodingClient`, `OpenMeteoWeatherClient`) handle HTTP communication, response parsing, and retry logic. This makes it trivial to swap or add providers without touching business logic.
+4.  **`AppConfig`**: Centralizes all configuration loaded from environment variables, so no magic strings are scattered across the codebase.
+5.  **Models & Enums**: Data transfer objects (`Temperature`, `Coordinates`, `ErrorDTO`) and enumerations (`TemperatureCategory`, `TemperatureUnit`) provide type-safe data structures. `TemperatureCategory.from()` encapsulates the classification logic in one place, keeping it isolated and easy to test.
+
+## Key Design Decisions
+
+- **Thin handler**: The `WeatherHandler` deliberately contains no business logic. This makes the Lambda entry point easy to read and keeps AWS-specific code isolated from the core application.
+- **Interface-based clients**: `WeatherClient` and `GeocodingClient` are interfaces rather than concrete classes. This decouples the service layer from any specific API provider and is the foundation for both testability and extensibility.
+- **Geocoding via Open-Meteo**: Rather than requiring the caller to provide coordinates, the function accepts a human-readable city name and resolves it to coordinates using the Open-Meteo Geocoding API. This keeps the public interface simple.
+- **First result as most relevant**: The Geocoding API returns a list of locations matching the given city name, ordered by relevance (most popular first). The function always uses the first result, which in practice corresponds to the most well-known city with that name.
+- **Retry logic in clients**: Transient failures are an external API concern, not a business concern. Both API clients implement their own configurable retry logic (max retries and delay are set via environment variables), keeping `WeatherService` simple and focused.
+- **Environment-based configuration**: All tunable parameters (URLs, retry counts, delays, temperature unit) are environment variables, which is standard practice for Lambda functions and avoids hardcoded values.
+
+## Unit Testing Without the Real API
+
+Because `WeatherClient` and `GeocodingClient` are interfaces, their implementations can be replaced with mocks in unit tests. For example, using Mockito:
+
+- A mock `WeatherClient` can be configured to return a fixed temperature value.
+- A mock `GeocodingClient` can return a predefined set of coordinates.
+- `WeatherService` can then be tested in complete isolation — no HTTP calls, no network dependency, no Open-Meteo account needed.
+
+This also means `TemperatureCategory.from()` can be unit tested directly as a pure function with no dependencies at all.
 
 ## Getting Started
 
@@ -68,7 +87,7 @@ This will generate a JAR file in the `target/` directory (e.g., `weather.app.ass
 
 ## Usage
 
-Once deployed, you can invoke the function via its Lambda Function URL. The function expects a single query parameter, `cityName`.
+Once deployed, you can invoke the function via its Lambda Function URL. The function expects a single query parameter: `cityName`.
 
 **Example Request:**
 
@@ -109,3 +128,9 @@ If an external API fails or returns an unexpected response.
     "timestamp": "2023-10-27 10:31:15"
 }
 ```
+
+## Design Reflection — Adding a New Weather Provider
+
+The current design supports adding a new weather provider with minimal changes. Because `WeatherClient` is an interface, a new provider (e.g. OpenWeatherMap) would only require a new implementation class — `WeatherService` and `WeatherHandler` would remain completely untouched. The same applies to the geocoding layer via `GeocodingClient`.
+
+The main current limitation is that the provider is fixed at deployment time through environment variables. There is no runtime mechanism to select between multiple providers dynamically. Given more time, the most valuable improvement would be introducing a `WeatherClientFactory` that reads a `WEATHER_PROVIDER` environment variable and returns the appropriate implementation — making it straightforward to support multiple providers or fall back between them.
